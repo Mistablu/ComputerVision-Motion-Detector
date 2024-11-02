@@ -3,12 +3,22 @@ import time
 from sendemail import send_email
 from datetime import datetime
 import glob
+from threading import Thread
+import os
+
+if not os.path.exists("images"):
+    os.makedirs("images")
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
 first_frame = None
 status_list = []
 count = 1
+
+def clean_folder():
+    images = glob.glob("images/*.png")
+    for image in images:
+        os.remove(image)
 
 while True:
     now = datetime.now()
@@ -46,7 +56,15 @@ while True:
     status_list = status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email(f"images/{index}.png")
+
+        email_thread = Thread(target=send_email,args=(images[index],))
+        email_thread.daemon = True
+
+        clean_thread = Thread(target=clean_folder)
+        clean_thread.daemon = True
+        
+        email_thread.start()
+        
 
     #Display date and timestamp on video
     cv2.putText(img=frame,text=now.strftime("%A"),org=(20,30),
@@ -59,9 +77,11 @@ while True:
 
 
     cv2.imshow("My video",frame)
-    key = cv2.waitKey(1)
+    key = cv2.waitKey(1) 
 
     if key == ord("q"):
         break
 
 video.release()
+clean_thread.start()
+time.sleep(1)
