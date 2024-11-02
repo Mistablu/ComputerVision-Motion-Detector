@@ -2,6 +2,7 @@ import cv2
 import time
 from sendemail import send_email
 from datetime import datetime
+import glob
 
 video = cv2.VideoCapture(0)
 time.sleep(1)
@@ -13,8 +14,6 @@ while True:
     now = datetime.now()
     status = 0
     check, frame = video.read()
-    cv2.imwrite(f"images/{count}.png",frame)
-    count = count+1
     gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     gray_frame_gau = cv2.GaussianBlur(gray_frame,(21,21),0)
 
@@ -36,12 +35,18 @@ while True:
 
         if rectangle.any():
             status = 1
+            cv2.imwrite(f"images/{count}.png",frame)
+            count = count+1
+            images = glob.glob("images/*.png")
+            index = int(len(images)/2)
+
+
 
     status_list.append(status)
     status_list = status_list[-2:]
 
     if status_list[0] == 1 and status_list[1] == 0:
-        send_email()
+        send_email(f"images/{index}.png")
 
     #Display date and timestamp on video
     cv2.putText(img=frame,text=now.strftime("%A"),org=(20,30),
